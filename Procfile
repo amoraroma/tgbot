@@ -1,1 +1,1 @@
-web: bin/tgbot
+console: bin/tgbot
