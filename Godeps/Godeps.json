@@ -1,0 +1,65 @@
+{
+	"ImportPath": "github.com/user/tgbot",
+	"GoVersion": "go1.13",
+	"GodepVersion": "v80",
+	"Packages": [
+		"./..."
+	],
+	"Deps": [
+		{
+			"ImportPath": "github.com/bogem/id3v2",
+			"Comment": "v1.1.1-1-ga4e250f",
+			"Rev": "a4e250fe50b485ccf31559c7b8983ce7d98dbbb9"
+		},
+		{
+			"ImportPath": "github.com/go-telegram-bot-api/telegram-bot-api",
+			"Comment": "v4.6.4-25-gb33efee",
+			"Rev": "b33efeebc78563cfeddf19563781cffb16aaabdf"
+		},
+		{
+			"ImportPath": "github.com/technoweenie/multipartstreamer",
+			"Comment": "v1.0.1",
+			"Rev": "a90a01d73ae432e2611d178c18367fbaa13e0154"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/charmap",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/internal",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/internal/identifier",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "golang.org/x/text/encoding/unicode",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "golang.org/x/text/internal/utf8internal",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "golang.org/x/text/runes",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "golang.org/x/text/transform",
+			"Comment": "v0.3.2-6-g929e72c",
+			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		}
+	]
+}
