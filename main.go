@@ -10,10 +10,10 @@ import (
 )
 
 // @Okiarbot
-var tlgrmBotAPI = "***REMOVED***"
+// var tlgrmBotAPI = "***REMOVED***"
 
 // @sc_download_bot
-// var tlgrmBotAPI = "***REMOVED***"
+var tlgrmBotAPI = "***REMOVED***"
 
 func main() {
 	bot, err := tgbotapi.NewBotAPI(tlgrmBotAPI)
