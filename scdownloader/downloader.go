@@ -18,19 +18,19 @@ var soundcloudAPI = "***REMOVED***"
 
 // Download your song by provided url
 func Download(songURL string) string {
-	log.Println("Looking for song id")
+	// log.Println("Looking for song id")
 	clientID := soundcloudAPI
 	songID := getSongID(songURL, clientID)
-	log.Println("Received song id: ", songID, ". Looking for song info")
+	// log.Println("Received song id: ", songID, ". Looking for song info")
 	songInfo := getSongInfo(songID, clientID)
-	log.Println("Received song info object. Looking for song playlist url")
+	// log.Println("Received song info object. Looking for song playlist url")
 	songM3u8Link := getM3u8Link(songInfo, clientID)
-	log.Println("Received song playlist url. Downloading mp3")
+	// log.Println("Received song playlist url. Downloading mp3")
 	songTitle := songInfo["title"].(string)
 	songMp3Name := getMp3(songM3u8Link, songTitle)
-	log.Println("Downloaded mp3 with name: ", songMp3Name, "Updating tags")
+	// log.Println("Downloaded mp3 with name: ", songMp3Name, "Updating tags")
 	updateSongTags(songMp3Name, songInfo)
-	log.Println("Updated song tags. Finishing job...")
+	// log.Println("Updated song tags. Finishing job...")
 	return songMp3Name
 }
 
