@@ -2,9 +2,6 @@
 	"ImportPath": "github.com/user/tgbot",
 	"GoVersion": "go1.13",
 	"GodepVersion": "v80",
-	"Packages": [
-		"./..."
-	],
 	"Deps": [
 		{
 			"ImportPath": "github.com/bogem/id3v2",

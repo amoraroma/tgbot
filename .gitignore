@@ -1,0 +1,10 @@
+# Editor config
+/.idea/
+
+# Test files
+/test/
+*_test.go
+
+# Binaries
+/bin/
+*.exe

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -14,23 +15,26 @@ import (
 	m3u8 "github.com/user/tgbot/convertm3u8"
 )
 
-var soundcloudAPI = "***REMOVED***"
-
 // Download your song by provided url
 func Download(songURL string) string {
-	// log.Println("Looking for song id")
-	clientID := soundcloudAPI
+	var soundCloudAPI string
+	soundCloudAPI, ok := os.LookupEnv("soundCloudAPI")
+	if !ok {
+		soundCloudAPI = "***REMOVED***"
+	}
+	log.Println("[downloader] Looking for song id")
+	clientID := soundCloudAPI
 	songID := getSongID(songURL, clientID)
-	// log.Println("Received song id: ", songID, ". Looking for song info")
+	log.Println("[downloader] Received song id: ", songID, ". Looking for song info")
 	songInfo := getSongInfo(songID, clientID)
-	// log.Println("Received song info object. Looking for song playlist url")
+	log.Println("[downloader] Received song info object. Looking for song playlist url")
 	songM3u8Link := getM3u8Link(songInfo, clientID)
-	// log.Println("Received song playlist url. Downloading mp3")
+	log.Println("[downloader] Received song playlist url. Downloading mp3")
 	songTitle := songInfo["title"].(string)
 	songMp3Name := getMp3(songM3u8Link, songTitle)
-	// log.Println("Downloaded mp3 with name: ", songMp3Name, "Updating tags")
+	log.Println("[downloader] Downloaded mp3 with name: ", songMp3Name, "Updating tags")
 	updateSongTags(songMp3Name, songInfo)
-	// log.Println("Updated song tags. Finishing job...")
+	log.Println("[downloader] Updated song tags. Finishing job...")
 	return songMp3Name
 }
 
@@ -44,7 +48,7 @@ func getSongID(songURL string, clientID string) string {
 	res.Body.Close()
 	var songMetadata map[string]interface{}
 	if err := json.Unmarshal(content, &songMetadata); err != nil {
-		log.Panic("error:", err)
+		log.Panic("[downloader] error:", err)
 	}
 	songID := fmt.Sprintf("%.0f", songMetadata["id"])
 	return songID
@@ -60,7 +64,7 @@ func getSongInfo(songID string, clientID string) map[string]interface{} {
 	res.Body.Close()
 	var songInfo map[string]interface{}
 	if err := json.Unmarshal(content, &songInfo); err != nil {
-		log.Panic("error:", err)
+		log.Panic("[downloader] error:", err)
 	}
 	return songInfo
 }
@@ -78,7 +82,7 @@ func getM3u8Link(songInfo map[string]interface{}, clientID string) string {
 		}
 	}
 	if songDlURL == "" {
-		log.Panic("Not found url for downloading!")
+		log.Panic("[downloader] not found url for downloading!")
 	}
 	formattedSongDlURL := fmt.Sprintf("%s?client_id=%s", songDlURL, clientID)
 	res, err := http.Get(formattedSongDlURL)
@@ -89,16 +93,16 @@ func getM3u8Link(songInfo map[string]interface{}, clientID string) string {
 	res.Body.Close()
 	var songURLMap map[string]string
 	if err := json.Unmarshal(jsonContent, &songURLMap); err != nil {
-		log.Panic("error:", err)
+		log.Panic("[downloader] error:", err)
 	}
-	return string(songURLMap["url"])
+	return songURLMap["url"]
 }
 
 func getMp3(link string, title string) string {
 	name := fmt.Sprintf("%s.mp3", clearString(title))
 	res, err := http.Get(link)
 	if err != nil {
-		log.Panic("[getMp3] Error: ", err)
+		log.Panic("[downloader] Error: ", err)
 	}
 	defer res.Body.Close()
 	if err := m3u8.Convert(res.Body, name); err != nil {
@@ -109,7 +113,8 @@ func getMp3(link string, title string) string {
 
 func clearString(s string) string {
 	s = strings.TrimSpace(s)
-	re := regexp.MustCompile(`(\\|\/|\||\*|\:|\?|\"|\<|\>)`)
+	//re := regexp.MustCompile(`(\\|\/|\||\*|\:|\?|\"|\<|\>)`)
+	re := regexp.MustCompile(`([\\/|*:?"<>])`)
 	result := re.ReplaceAllString(s, "-")
 	return result
 }
@@ -117,7 +122,7 @@ func clearString(s string) string {
 func updateSongTags(songName string, songInfo map[string]interface{}) {
 	tag, err := id3v2.Open(songName, id3v2.Options{Parse: true})
 	if tag == nil || err != nil {
-		log.Panic("Error while opening mp3 file: ", err)
+		log.Panic("[downloader] Error while opening mp3 file: ", err)
 	}
 	defer tag.Close()
 	if titleObj := songInfo["title"]; titleObj != nil {
@@ -186,6 +191,6 @@ func updateSongTags(songName string, songInfo map[string]interface{}) {
 		tag.AddAttachedPicture(hqPic)
 	}
 	if err := tag.Save(); err != nil {
-		log.Panic("Error while saving file: ", err)
+		log.Panic("[downloader] Error while saving file: ", err)
 	}
 }

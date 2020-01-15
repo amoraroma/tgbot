@@ -16,20 +16,34 @@ import (
 	"strings"
 )
 
+func Convert(in interface{}, out string) error {
+	var err error
+	fileName, isString := in.(string)
+	if isString {
+		err = convertFile(fileName, out)
+	} else {
+		fileReader, isReader := in.(io.Reader)
+		if isReader {
+			err = convertReader(fileReader, out)
+		}
+	}
+	return err
+}
+
 // ConvertFile read file with provided name and push received data to Convert()
-func ConvertFile(name string, out string) error {
+func convertFile(name, out string) error {
 	playlist, err := openPlaylist(name)
 	if err != nil {
 		return err
 	}
-	if err := Convert(playlist, out); err != nil {
+	if err := convertReader(playlist, out); err != nil {
 		return err
 	}
 	return nil
 }
 
 // Convert proceed your raw data and convert it to file with <out> name
-func Convert(data io.Reader, out string) error {
+func convertReader(data io.Reader, out string) error {
 	songs, err := parseM3u8(data)
 	if err != nil {
 		return err
@@ -41,9 +55,11 @@ func Convert(data io.Reader, out string) error {
 	if filepath.Ext(out) == "" {
 		out = fmt.Sprintf("%s.mp3", out)
 	} else if filepath.Ext(out) != ".mp3" {
-		log.Panic("Invalid output file extenstion")
+		log.Panic("[convert] Invalid output file extension")
 	}
-	writeSong(songData, out)
+	if err := writeSong(songData, out); err != nil {
+		log.Panic(err)
+	}
 	return nil
 }
 
@@ -53,7 +69,7 @@ func openPlaylist(file string) (io.Reader, error) {
 		fileU8 = fmt.Sprintf("%s.m3u8", file)
 		file = fmt.Sprintf("%s.m3u", file)
 	} else if ext != ".m3u" {
-		return nil, errors.New("Pass a correct .m3u file")
+		return nil, errors.New("[convert] pass a correct .m3u file")
 	}
 	reader, err := os.Open(file)
 	if err != nil {
@@ -70,7 +86,7 @@ func parseM3u8(r io.Reader) ([]string, error) {
 	b := bufio.NewReader(r)
 	p := make([]string, 0)
 	for {
-		bytes, err := b.ReadBytes('\n')
+		rawLine, err := b.ReadBytes('\n')
 		last := false
 
 		if err == io.EOF {
@@ -79,7 +95,7 @@ func parseM3u8(r io.Reader) ([]string, error) {
 			return nil, err
 		}
 
-		line := strings.TrimSpace(string(bytes))
+		line := strings.TrimSpace(string(rawLine))
 		length := len(line)
 		if length >= 1 && line[0] == '#' {
 			continue
