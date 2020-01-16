@@ -63,11 +63,16 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 		sendMessage(bot, chatID, response)
 		return
 	}
-	rawURL, ok := getSCLink(message.Text)
-	if !ok {
+	rawURL, status := getSCLink(message.Text)
+	if status != 0 {
 		if private {
-			log.Println("Received message without link in private chat. Responding...")
-			sendMessage(bot, chatID, "Please send me a message with valid SoundCloud url or type /help for more info")
+			if status == 1 {
+				log.Println("Received message without link in private chat. Responding...")
+				sendMessage(bot, chatID, "Please send me a message with valid SoundCloud url or type /help for more info")
+			} else if status == 2 {
+				log.Println("Received message with playlist url in private chat. Responding...")
+				sendMessage(bot, chatID, "Sorry, but i don't work with playlists yet. Type /help for more info")
+			}
 		}
 		return
 	}
@@ -103,26 +108,32 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 func checkForCommands(message *tgbotapi.Message) (response string) {
 	switch message.Command() {
 	case "help":
-		response = "Send me an url and i will respond to you with attached audio.\nIf something went wrong - try again or contact with developer (link in description)"
+		response = "Send me an url and i will respond to you with attached audio.\nPlaylists not supported yet\n\nIf something went wrong - try again or contact with developer (link in description)"
 	case "start":
 		response = "Hello, #{username}.\nI'm SoundCloud downloader bot.\nSend me an url and i will respond with attached audio file"
 	default:
-		response = "I don't know that command. Just send me an url to SoundCloud song"
+		response = "I don't know that command. Just send me an url to SoundCloud song or type /help for more info"
 	}
 	return response
 }
 
-func getSCLink(message string) (url string, ok bool) {
-	re := regexp.MustCompile(`(http.?://)(m\.)?(soundcloud.com)/(\S+)/(\S+)`)
+// If failed - return empty string as <url>
+// Status codes: [0 - ok, 1 - not SC, 2 - playlist url]
+func getSCLink(message string) (url string, status int8) {
+	re := regexp.MustCompile(`(http.?://)(m\.)?(soundcloud.com)/(\S+)/(\S+)/(\S+)`)
 	// res contain array with result of regExp:
-	// [1] - protocol, [2] - "m." if exist, [3] - domain, [4] - user, [5] - song
+	// [1] - protocol, [2] - "m." if exist, [3] - domain, [4] - user,
+	// [5] - song (or "sets" if its playlist) [6] - playlist link
 	res := re.FindStringSubmatch(message)
 	if res == nil {
-		return "", false
+		return "", 1
+	}
+	if res[5] == "sets" {
+		return "", 2
 	}
 	url = fmt.Sprintf("%s%s/%s/%s", res[1], res[3], res[4], res[5])
 	log.Printf("%+v", url)
-	return url, true
+	return url, 0
 }
 
 func sendMessage(bot *tgbotapi.BotAPI, chatID int64, text string, oldMsgContainer ...int) (msgID int) {
