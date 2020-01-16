@@ -22,19 +22,19 @@ func Download(songURL string) string {
 	if !ok {
 		soundCloudAPI = "***REMOVED***"
 	}
-	log.Println("[downloader] Looking for song id")
+	//log.Println("[downloader] Looking for song id")
 	clientID := soundCloudAPI
 	songID := getSongID(songURL, clientID)
-	log.Println("[downloader] Received song id: ", songID, ". Looking for song info")
+	//log.Println("[downloader] Received song id: ", songID, ". Looking for song info")
 	songInfo := getSongInfo(songID, clientID)
-	log.Println("[downloader] Received song info object. Looking for song playlist url")
+	//log.Println("[downloader] Received song info object. Looking for song playlist url")
 	songM3u8Link := getM3u8Link(songInfo, clientID)
-	log.Println("[downloader] Received song playlist url. Downloading mp3")
+	//log.Println("[downloader] Received song playlist url. Downloading mp3")
 	songTitle := songInfo["title"].(string)
 	songMp3Name := getMp3(songM3u8Link, songTitle)
-	log.Println("[downloader] Downloaded mp3 with name: ", songMp3Name, "Updating tags")
+	//log.Println("[downloader] Downloaded mp3 with name: ", songMp3Name, "Updating tags")
 	updateSongTags(songMp3Name, songInfo)
-	log.Println("[downloader] Updated song tags. Finishing job...")
+	//log.Println("[downloader] Updated song tags. Finishing job...")
 	return songMp3Name
 }
 

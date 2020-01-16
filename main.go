@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"regexp"
@@ -54,10 +55,10 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	chatType := message.Chat.Type
 	private := chatType == "private"
 	var tmpMessageID int
-	log.Println("Received new message", message.Text)
+	//log.Println("Received new message", message.Text)
 	chatID := message.Chat.ID
 	if message.IsCommand() {
-		log.Println("its command. Responding...")
+		log.Println("Received command -", message.Text, ".Responding...")
 		response := checkForCommands(message)
 		sendMessage(bot, chatID, response)
 		return
@@ -65,7 +66,7 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	rawURL, ok := getSCLink(message.Text)
 	if !ok {
 		if private {
-			log.Println("looks like there is no soundcloud url")
+			log.Println("Received message without link in private chat. Responding...")
 			sendMessage(bot, chatID, "Please send me a message with valid SoundCloud url or type /help for more info")
 		}
 		return
@@ -73,8 +74,9 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	if private {
 		tmpMessageID = sendMessage(bot, chatID, "Please wait, i'm downloading this song...")
 	}
+	log.Println("Received message with soundcloud url. Downloading song...")
 	songFile := scdownloader.Download(rawURL)
-	log.Println("Received song name. Uploading to user")
+	log.Println("Downloaded song. Uploading to user...")
 	if private {
 		tmpMessageID = sendMessage(bot, chatID, "Everything done. Uploading song to you...", tmpMessageID)
 	}
@@ -92,7 +94,9 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 			log.Panic(err)
 		}
 	}
+	log.Println("Deleting file", songFile, "...")
 	deleteFile(songFile)
+	log.Println("Waiting for another message ~_~")
 	return
 }
 
@@ -109,11 +113,15 @@ func checkForCommands(message *tgbotapi.Message) (response string) {
 }
 
 func getSCLink(message string) (url string, ok bool) {
-	re := regexp.MustCompile(`htt(p|ps)://soundcloud\.com/\S+/\S+`)
-	url = re.FindString(message)
-	if url == "" {
+	re := regexp.MustCompile(`(http.?://)(m\.)?(soundcloud.com)/(\S+)/(\S+)`)
+	// res contain array with result of regExp:
+	// [1] - protocol, [2] - "m." if exist, [3] - domain, [4] - user, [5] - song
+	res := re.FindStringSubmatch(message)
+	if res == nil {
 		return "", false
 	}
+	url = fmt.Sprintf("%s%s/%s/%s", res[1], res[3], res[4], res[5])
+	log.Printf("%+v", url)
 	return url, true
 }
 
