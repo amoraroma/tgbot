@@ -18,15 +18,16 @@ import (
 
 func Convert(in interface{}, out string) error {
 	var err error
-	fileName, isString := in.(string)
-	if isString {
+
+	switch in.(type) {
+	case string:
+		fileName := in.(string)
 		err = convertFile(fileName, out)
-	} else {
-		fileReader, isReader := in.(io.Reader)
-		if isReader {
-			err = convertReader(fileReader, out)
-		}
+	case io.Reader:
+		fileReader := in.(io.Reader)
+		err = convertReader(fileReader, out)
 	}
+
 	return err
 }
 
