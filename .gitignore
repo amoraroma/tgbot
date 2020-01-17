@@ -3,7 +3,6 @@
 
 # Test files
 /test/
-*_test.go
 
 # Binaries
 /bin/
