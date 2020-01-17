@@ -127,14 +127,12 @@ func getSCLink(message string) (url string, status int8) {
 	// [1] - protocol, [2] - "m." if exist, [3] - domain + /, [4] - user + /,
 	// [5] - song (or "sets" if its playlist) [6] - / + playlist link
 	res := re.FindStringSubmatch(message)
-	log.Printf("%+v", res)
 	if res == nil {
 		return "", 1
 	}
 	if res[5] == "sets" {
 		return "", 2
 	}
-	fmt.Sprint()
 	url = fmt.Sprintf("https://%s%s%s", res[3], res[4], res[5])
 	log.Printf("%+v", url)
 	return url, 0
