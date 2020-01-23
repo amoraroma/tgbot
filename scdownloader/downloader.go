@@ -8,20 +8,15 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 )
 
 // Download your song by provided url
-func Download(songURL string) string {
-	var soundCloudAPI string
-	soundCloudAPI, ok := os.LookupEnv("soundCloudAPI")
-	if !ok {
-		soundCloudAPI = "***REMOVED***"
+func Download(songURL string, clientID string) string {
+	if clientID == "" {
+		log.Panic("No soundcloud token provided")
 	}
-	//log.Println("[downloader] Looking for song id")
-	clientID := soundCloudAPI
 	songID := getSongID(songURL, clientID)
 	//log.Println("[downloader] Received song id: ", songID, ". Looking for song info")
 	songInfo := getSongInfo(songID, clientID)

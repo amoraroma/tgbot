@@ -14,6 +14,11 @@
 			"Rev": "b33efeebc78563cfeddf19563781cffb16aaabdf"
 		},
 		{
+			"ImportPath": "github.com/kelseyhightower/envconfig",
+			"Comment": "v1.4.0",
+			"Rev": "0b417c4ec4a8a82eecc22a1459a504aa55163d61"
+		},
+		{
 			"ImportPath": "github.com/technoweenie/multipartstreamer",
 			"Comment": "v1.0.1",
 			"Rev": "a90a01d73ae432e2611d178c18367fbaa13e0154"
@@ -57,6 +62,11 @@
 			"ImportPath": "golang.org/x/text/transform",
 			"Comment": "v0.3.2-6-g929e72c",
 			"Rev": "929e72ca90deac4784bbe451caf10faa5b256ebe"
+		},
+		{
+			"ImportPath": "gopkg.in/yaml.v2",
+			"Comment": "v2.2.7",
+			"Rev": "1f64d6156d11335c3f22d9330b0ad14fc1e789ce"
 		}
 	]
 }
