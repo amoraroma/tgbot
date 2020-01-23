@@ -25,15 +25,14 @@ const (
 		"Please send me an url to SoundCloud song or type /help for more info"
 )
 
+var cfg Config
+
 func main() {
-	var tlgrmBotAPI string
-	tlgrmBotAPI, ok := os.LookupEnv("telegramAPI")
-	if ok != true {
-		// If there is not env with api -> use test account's api
-		// @OkiarBot
-		tlgrmBotAPI = "***REMOVED***"
+	cfg = loadConfig("config.yml")
+	if (cfg == Config{}) {
+		log.Fatal("Can't load config")
 	}
-	bot, err := tgbotapi.NewBotAPI(tlgrmBotAPI)
+	bot, err := tgbotapi.NewBotAPI(cfg.Telegram.Token)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -89,7 +88,7 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 		tmpMessageID = sendMessage(bot, chatID, MsgDownloadingSong)
 	}
 	log.Println("Received message with soundcloud url. Downloading song...")
-	songFile := scdownloader.Download(rawURL)
+	songFile := scdownloader.Download(rawURL, cfg.SoundCloud.Token)
 	log.Println("Downloaded song. Uploading to user...")
 	if private {
 		tmpMessageID = sendMessage(bot, chatID, MsgUploadingToUser, tmpMessageID)

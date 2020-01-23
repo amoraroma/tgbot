@@ -1,0 +1,7 @@
+# You should put tokens here and rename this file to "config.yml"
+# Or you can use environment variables
+# "SOUNDCLOUD_TOKEN" and "TELEGRAM_TOKEN"
+soundcloud:
+  token: ""
+telegram:
+  token: ""

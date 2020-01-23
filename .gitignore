@@ -7,3 +7,6 @@
 # Binaries
 /bin/
 *.exe
+
+# Config file
+config.yml
