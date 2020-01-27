@@ -2,6 +2,8 @@ module github.com/user/tgbot
 
 go 1.13
 
+// +heroku goVersion go1.13
+
 require (
 	github.com/bogem/id3v2 v1.1.2-0.20181016195535-a4e250fe50b4
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.5-0.20190904012038-b33efeebc785+incompatible

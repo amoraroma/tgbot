@@ -60,6 +60,7 @@ func main() {
 }
 
 func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+	analytics(message)
 	chatType := message.Chat.Type
 	private := chatType == "private"
 	var tmpMessageID int
