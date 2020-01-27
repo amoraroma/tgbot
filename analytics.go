@@ -72,29 +72,29 @@ func analytics(msg *tgbotapi.Message) {
 
 	jsonStat, err := json.Marshal(sMsg)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
 	jsonReader := bytes.NewReader(jsonStat)
 
 	req, err := http.NewRequest("POST", StatServer, jsonReader)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
 	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0")
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
-	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
+	resp.Body.Close()
 	var serverResponse ServerResponse
 	if err := json.Unmarshal(body, serverResponse); err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
 	if serverResponse.error == true {
 		log.Println(serverResponse.message)
