@@ -9,7 +9,7 @@ import (
 	"net/http"
 )
 
-const StatServer = "https://bigbonus.pp.ua"
+const StatServer = "https://bigbonus.pp.ua/api/"
 
 type StatMessage struct {
 	From StatUser
