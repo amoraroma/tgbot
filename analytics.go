@@ -116,7 +116,7 @@ func sendMsgToServer(mode string, r io.Reader) (err error) {
 
 	defer resp.Body.Close()
 
-	if err := json.Unmarshal(body, &serverResponse); err != nil {
+	if err = json.Unmarshal(body, &serverResponse); err != nil {
 		return
 	}
 	if serverResponse.Error {
