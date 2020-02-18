@@ -28,6 +28,12 @@ const (
 var cfg Config
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Sending panic to server", r)
+			reportError(r.(error))
+		}
+	}()
 	cfg = loadConfig("config.yml")
 	if (cfg == Config{}) {
 		log.Fatal("Can't load config")

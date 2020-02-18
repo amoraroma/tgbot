@@ -3,13 +3,17 @@ package main
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 )
 
 const StatServer = "https://bigbonus.pp.ua/api/"
+const ErrorServer = "https://bigbonus.pp.ua/api/err.php"
 
 type StatMessage struct {
 	From StatUser
@@ -41,34 +45,7 @@ type ServerResponse struct {
 }
 
 func analytics(msg *tgbotapi.Message) {
-	var sChat = StatChat{}
-	if msg.Chat != nil {
-		sChat = StatChat{
-			ID:        msg.Chat.ID,
-			Type:      msg.Chat.Type,
-			Title:     msg.Chat.Title,
-			Username:  msg.Chat.UserName,
-			FirstName: msg.Chat.FirstName,
-			LastName:  msg.Chat.LastName,
-		}
-	}
-	var sUser = StatUser{}
-	if msg.From != nil {
-		sUser = StatUser{
-			ID:        msg.From.ID,
-			FirstName: msg.From.FirstName,
-			LastName:  msg.From.LastName,
-			Username:  msg.From.UserName,
-			Language:  msg.From.LanguageCode,
-		}
-	}
-
-	var sMsg = StatMessage{
-		sUser,
-		msg.Date,
-		sChat,
-		msg.Text,
-	}
+	var sMsg = makeStatMessage(msg)
 
 	jsonStat, err := json.Marshal(sMsg)
 	if err != nil {
@@ -76,30 +53,82 @@ func analytics(msg *tgbotapi.Message) {
 	}
 	jsonReader := bytes.NewReader(jsonStat)
 
-	req, err := http.NewRequest("POST", StatServer, jsonReader)
-	if err != nil {
-		log.Println(err)
+	if err = sendMsgToServer("Stat", jsonReader); err != nil {
+		log.Panic(err)
 	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0")
+
+	return
+}
+
+func makeStatMessage(msg *tgbotapi.Message) (sMsg StatMessage) {
+	var sChat = StatChat{}
+	var sUser = StatUser{}
+	if msg.Chat != nil {
+		sChat = StatChat{
+			msg.Chat.ID,
+			msg.Chat.Type,
+			msg.Chat.Title,
+			msg.Chat.UserName,
+			msg.Chat.FirstName,
+			msg.Chat.LastName,
+		}
+	}
+	if msg.From != nil {
+		sUser = StatUser{
+			msg.From.ID,
+			msg.From.FirstName,
+			msg.From.LastName,
+			msg.From.UserName,
+			msg.From.LanguageCode,
+		}
+	}
+
+	sMsg = StatMessage{sUser, msg.Date, sChat, msg.Text}
+	return sMsg
+}
+
+func sendMsgToServer(mode string, r io.Reader) (err error) {
+	var server string
+	if mode == "Error" {
+		server = ErrorServer
+	} else {
+		server = StatServer
+	}
+	var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0"
+	var serverResponse ServerResponse
+
+	req, err := http.NewRequest("POST", server, r)
+	if err != nil {
+		return
+	}
+	req.Header.Set("User-Agent", userAgent)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err)
-	}
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-	}
-	resp.Body.Close()
-	var serverResponse ServerResponse
-	if err := json.Unmarshal(body, &serverResponse); err != nil {
-		log.Println(err)
-	}
-	if serverResponse.Error == true {
-		log.Println(serverResponse.Message)
 		return
 	}
 
-	return
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return
+	}
+
+	defer resp.Body.Close()
+
+	if err := json.Unmarshal(body, &serverResponse); err != nil {
+		return
+	}
+	if serverResponse.Error {
+		err = fmt.Errorf("%s", serverResponse.Message)
+		return
+	}
+	return nil
+}
+
+func reportError(e error) {
+	reader := strings.NewReader(e.Error())
+	if err := sendMsgToServer("Error", reader); err != nil {
+		log.Panic(err)
+	}
 }
