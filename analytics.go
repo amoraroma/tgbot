@@ -129,6 +129,6 @@ func sendMsgToServer(mode string, r io.Reader) (err error) {
 func reportError(e error) {
 	reader := strings.NewReader(e.Error())
 	if err := sendMsgToServer("Error", reader); err != nil {
-		log.Panic(err)
+		log.Println(err)
 	}
 }

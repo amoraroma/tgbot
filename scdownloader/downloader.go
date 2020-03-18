@@ -6,62 +6,76 @@ import (
 	"github.com/bogem/id3v2"
 	m3u8 "github.com/user/tgbot/convertm3u8"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
 )
 
 // Download your song by provided url
-func Download(songURL string, clientID string) string {
+func Download(songURL string, clientID string) (string, error) {
 	if clientID == "" {
-		log.Panic("No soundcloud token provided")
+		return "", fmt.Errorf("no soundcloud token provided")
 	}
-	songID := getSongID(songURL, clientID)
+	songID, err := getSongID(songURL, clientID)
+	if err != nil {
+		return "", err
+	}
 	//log.Println("[downloader] Received song id: ", songID, ". Looking for song info")
-	songInfo := getSongInfo(songID, clientID)
+	songInfo, err := getSongInfo(songID, clientID)
+	if err != nil {
+		return "", err
+	}
 	//log.Println("[downloader] Received song info object. Looking for song playlist url")
-	songM3u8Link := getM3u8Link(songInfo, clientID)
+	songM3u8Link, err := getM3u8Link(songInfo, clientID)
+	if err != nil {
+		return "", err
+	}
 	//log.Println("[downloader] Received song playlist url. Downloading mp3")
 	songTitle := songInfo.Title
-	songMp3Name := getMp3(songM3u8Link, songTitle)
+	songMp3Name, err := getMp3(songM3u8Link, songTitle)
+	if err != nil {
+		return "", err
+	}
 	//log.Println("[downloader] Downloaded mp3 with name: ", songMp3Name, "Updating tags")
-	updateSongTags(songMp3Name, songInfo)
+	if err := updateSongTags(songMp3Name, songInfo); err != nil {
+		return "", err
+	}
 	//log.Println("[downloader] Updated song tags. Finishing job...")
-	return songMp3Name
+	return songMp3Name, nil
 }
 
-func getSongID(songURL string, clientID string) string {
-	uri := fmt.Sprintf("https://api.soundcloud.com/resolve.json?url=%s&client_id=%s", songURL, clientID)
+func getSongID(songURL string, clientID string) (string, error) {
+	uri := fmt.Sprintf("https://api-v2.soundcloud.com/resolve?url=%s&client_id=%s", songURL, clientID)
 	res, err := http.Get(uri)
 	if err != nil {
-		log.Panic(err)
+		return "", err
 	}
 	content, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
-	var songMetadata SongMetadata
+	var songMetadata SoundCloudMetadata2
 	if err := json.Unmarshal(content, &songMetadata); err != nil {
-		log.Panic("[downloader] error:", err)
+		return "", err
 	}
 	songID := fmt.Sprintf("%d", songMetadata.ID)
-	return songID
+	return songID, nil
 }
 
-func getSongInfo(songID string, clientID string) (songInfo SongInfo) {
+func getSongInfo(songID string, clientID string) (SongInfo, error) {
+	var songInfo SongInfo
 	uri := fmt.Sprintf("https://api-v2.soundcloud.com/tracks/%s?client_id=%s", songID, clientID)
 	res, err := http.Get(uri)
 	if err != nil {
-		log.Panic(err)
+		return SongInfo{}, err
 	}
 	content, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	if err := json.Unmarshal(content, &songInfo); err != nil {
-		log.Panic("[downloader] error:", err)
+		return SongInfo{}, err
 	}
-	return songInfo
+	return songInfo, nil
 }
 
-func getM3u8Link(songInfo SongInfo, clientID string) string {
+func getM3u8Link(songInfo SongInfo, clientID string) (string, error) {
 	transcodings := songInfo.Media.Transcodings
 	var songDlURL string
 	for _, transcoding := range transcodings {
@@ -72,13 +86,13 @@ func getM3u8Link(songInfo SongInfo, clientID string) string {
 		}
 	}
 	if songDlURL == "" {
-		log.Panic("[downloader] not found url for downloading!")
+		return "", fmt.Errorf("[downloader] not found url for downloading")
 	}
 	formattedSongDlURL := fmt.Sprintf("%s?client_id=%s", songDlURL, clientID)
 	//log.Print(formattedSongDlURL)
 	res, err := http.Get(formattedSongDlURL)
 	if err != nil {
-		log.Panic(err)
+		return "", err
 	}
 	jsonContent, err := ioutil.ReadAll(res.Body)
 	res.Body.Close()
@@ -86,22 +100,22 @@ func getM3u8Link(songInfo SongInfo, clientID string) string {
 		URL string `json:"url"`
 	}
 	if err := json.Unmarshal(jsonContent, &streamURL); err != nil {
-		log.Panic("[downloader] error:", err)
+		return "", err
 	}
-	return streamURL.URL
+	return streamURL.URL, nil
 }
 
-func getMp3(link string, title string) string {
+func getMp3(link string, title string) (string, error) {
 	name := fmt.Sprintf("%s.mp3", clearString(title))
 	res, err := http.Get(link)
 	if err != nil {
-		log.Panic("[downloader] Error: ", err)
+		return "", err
 	}
 	defer res.Body.Close()
 	if err := m3u8.Convert(res.Body, name); err != nil {
-		log.Panic(err)
+		return "", err
 	}
-	return name
+	return name, nil
 }
 
 func clearString(s string) string {
@@ -112,10 +126,10 @@ func clearString(s string) string {
 	return result
 }
 
-func updateSongTags(songName string, songInfo SongInfo) {
+func updateSongTags(songName string, songInfo SongInfo) error {
 	tag, err := id3v2.Open(songName, id3v2.Options{Parse: true})
 	if tag == nil || err != nil {
-		log.Panic("[downloader] Error while opening mp3 file: ", err)
+		return fmt.Errorf("[downloader] Error while opening mp3 file: %s", err)
 	}
 	defer tag.Close()
 	if songTitle := songInfo.Title; songTitle != "" {
@@ -150,12 +164,12 @@ func updateSongTags(songName string, songInfo SongInfo) {
 	if artURL := songInfo.ArtworkURL; artURL != "" {
 		res, err := http.Get(artURL)
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 		artwork, err := ioutil.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 		pic := id3v2.PictureFrame{
 			Encoding:    id3v2.EncodingUTF8,
@@ -168,12 +182,12 @@ func updateSongTags(songName string, songInfo SongInfo) {
 		hqArtURL := strings.Replace(artURL, "-large.jpg", "-t500x500.jpg", 1)
 		res, err = http.Get(hqArtURL)
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 		hqArtwork, err := ioutil.ReadAll(res.Body)
 		res.Body.Close()
 		if err != nil {
-			log.Panic(err)
+			return err
 		}
 		hqPic := id3v2.PictureFrame{
 			Encoding:    id3v2.EncodingUTF8,
@@ -185,7 +199,7 @@ func updateSongTags(songName string, songInfo SongInfo) {
 		tag.AddAttachedPicture(hqPic)
 	}
 	if err := tag.Save(); err != nil {
-		log.Panic("[downloader] Error while saving file: ", err)
+		return fmt.Errorf("[downloader] Error while saving file: %s", err)
 	}
-	return
+	return nil
 }

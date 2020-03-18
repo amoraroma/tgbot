@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -56,10 +55,10 @@ func convertReader(data io.Reader, out string) error {
 	if filepath.Ext(out) == "" {
 		out = fmt.Sprintf("%s.mp3", out)
 	} else if filepath.Ext(out) != ".mp3" {
-		log.Panic("[convert] Invalid output file extension")
+		return fmt.Errorf("[convert] Invalid output file extension")
 	}
 	if err := writeSong(songData, out); err != nil {
-		log.Panic(err)
+		return err
 	}
 	return nil
 }

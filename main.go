@@ -12,6 +12,7 @@ import (
 
 const (
 	MsgNotSoundCloud   string = "Please send me a message with valid SoundCloud url or type /help for more info"
+	MsgError           string = "Sorry, but there is some problems with this song. Please try another one or contact with developer"
 	MsgPlaylist        string = "Sorry, but i don't work with playlists yet. Type /help for more info"
 	MsgDownloadingSong string = "Please wait, i'm downloading this song..."
 	MsgUploadingToUser string = "Everything done. Uploading song to you..."
@@ -28,19 +29,14 @@ const (
 var cfg Config
 
 func main() {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Sending panic to server", r)
-			reportError(r.(error))
-		}
-	}()
+
 	cfg = loadConfig("config.yml")
 	if (cfg == Config{}) {
 		log.Fatal("Can't load config")
 	}
 	bot, err := tgbotapi.NewBotAPI(cfg.Telegram.Token)
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 
 	bot.Debug = false
@@ -54,10 +50,14 @@ func main() {
 
 	for update := range updates {
 		if update.Message != nil {
-			receivedMessage(bot, update.Message)
+			if err := receivedMessage(bot, update.Message); err != nil {
+				pingError(err, bot, update.Message.Chat.ID)
+			}
 			continue
 		} else if update.ChannelPost != nil {
-			receivedMessage(bot, update.ChannelPost)
+			if err := receivedMessage(bot, update.ChannelPost); err != nil {
+				reportError(err)
+			}
 			continue
 		} else {
 			continue
@@ -65,7 +65,13 @@ func main() {
 	}
 }
 
-func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
+func pingError(e error, bot *tgbotapi.BotAPI, chatID int64) {
+	sendMessage(bot, chatID, MsgError)
+	reportError(e)
+	return
+}
+
+func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
 	analytics(message)
 	chatType := message.Chat.Type
 	private := chatType == "private"
@@ -76,7 +82,7 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 		log.Println("Received command -", message.Text, ".Responding...")
 		response := checkForCommands(message)
 		sendMessage(bot, chatID, response)
-		return
+		return nil
 	}
 	rawURL, status := getSCLink(message.Text)
 	if status != 0 {
@@ -89,35 +95,39 @@ func receivedMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 				sendMessage(bot, chatID, MsgPlaylist)
 			}
 		}
-		return
+		return nil
 	}
 	if private {
 		tmpMessageID = sendMessage(bot, chatID, MsgDownloadingSong)
 	}
 	log.Println("Received message with soundcloud url. Downloading song...")
-	songFile := scdownloader.Download(rawURL, cfg.SoundCloud.Token)
+	songFile, err := scdownloader.Download(rawURL, cfg.SoundCloud.Token)
+	if err != nil {
+		log.Printf("There is error while downloading: %s\n", err)
+		return err
+	}
 	log.Println("Downloaded song. Uploading to user...")
 	if private {
 		tmpMessageID = sendMessage(bot, chatID, MsgUploadingToUser, tmpMessageID)
 	}
 	// Inform user about uploading
 	if _, err := bot.Send(tgbotapi.NewChatAction(chatID, "upload_audio")); err != nil {
-		log.Panic(err)
+		return err
 	}
 	audioU := tgbotapi.NewAudioUpload(chatID, songFile)
 	if _, err := bot.Send(audioU); err != nil {
-		log.Panic(err)
+		return err
 	}
 	if private {
 		msgToDelete := tgbotapi.NewDeleteMessage(chatID, tmpMessageID)
 		if _, err := bot.DeleteMessage(msgToDelete); err != nil {
-			log.Panic(err)
+			return err
 		}
 	}
 	log.Println("Deleting file", songFile, "...")
 	deleteFile(songFile)
 	log.Println("Waiting for another message ~_~")
-	return
+	return nil
 }
 
 func checkForCommands(message *tgbotapi.Message) (response string) {
