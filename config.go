@@ -9,16 +9,18 @@ import (
 )
 
 type Config struct {
-	SoundCloud `yaml:"soundcloud"`
-	Telegram   `yaml:"telegram"`
+	Segmentio `yaml:"segmentio"`
+	Telegram  `yaml:"telegram"`
+	Mode      string `yaml:"mode" envconfig:"MODE"`
 }
 
-type SoundCloud struct {
-	Token string `yaml:"token" envconfig:"SOUNDCLOUD_TOKEN"`
+type Segmentio struct {
+	Token string `yaml:"token" envconfig:"SEGMENTIO_TOKEN"`
 }
 
 type Telegram struct {
-	Token string `yaml:"token" envconfig:"TELEGRAM_TOKEN"`
+	Token     string `yaml:"token" envconfig:"TELEGRAM_TOKEN"`
+	TestToken string `yaml:"testToken" envconfig:"TELEGRAM_TEST_TOKEN"`
 }
 
 func loadConfig(file string) (cfg Config) {
@@ -31,6 +33,9 @@ func loadConfig(file string) (cfg Config) {
 	if (cfg == Config{}) {
 		log.Fatal("config not loaded!")
 	}
+	if cfg.Mode == "debug" {
+		cfg.Telegram.Token = cfg.Telegram.TestToken
+	}
 	return cfg
 }
 
@@ -39,7 +44,7 @@ func readFile(fileName string, cfg *Config) (e error) {
 	if err != nil {
 		return errors.New("can't read config file")
 	}
-	defer f.Close()
+	defer closeFile(f)
 
 	decoder := yaml.NewDecoder(f)
 	err = decoder.Decode(cfg)
@@ -56,4 +61,13 @@ func readEnv(cfg *Config) (e error) {
 		return errors.New("can't read environment variables")
 	}
 	return nil
+}
+
+func closeFile(f *os.File) {
+	log.Println("closing")
+	err := f.Close()
+
+	if err != nil {
+		log.Printf("error while closing file: %v\n", err)
+	}
 }

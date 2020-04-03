@@ -1,7 +1,10 @@
 # You should put tokens here and rename this file to "config.yml"
 # Or you can use environment variables
-# "SOUNDCLOUD_TOKEN" and "TELEGRAM_TOKEN"
-soundcloud:
+# "SEGMENTIO_TOKEN" and "TELEGRAM_TOKEN"
+segmentio:
   token: ""
 telegram:
   token: ""
+  testToken: ""
+# debug | production
+mode: ""
