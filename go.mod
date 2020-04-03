@@ -1,4 +1,4 @@
-module github.com/user/tgbot
+module tgbot
 
 go 1.13
 

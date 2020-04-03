@@ -10,8 +10,11 @@ import (
 func main() {
 	config := loadConfig("config.yml")
 	analytics := NewAnalytics(config.Segmentio.Token)
-	//noinspection GoUnhandledErrorResult
-	defer analytics.client.Close()
+	defer func() {
+		if err := analytics.client.Close(); err != nil {
+			log.Printf("error while closing analytic client: %s", err)
+		}
+	}()
 	bot, err := tgbotapi.NewBotAPI(config.Telegram.Token)
 	if err != nil {
 		log.Fatal(err)

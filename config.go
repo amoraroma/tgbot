@@ -64,7 +64,6 @@ func readEnv(cfg *Config) (e error) {
 }
 
 func closeFile(f *os.File) {
-	log.Println("closing")
 	err := f.Close()
 
 	if err != nil {
