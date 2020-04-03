@@ -1,12 +1,14 @@
-# Editor config
-/.idea/
+# Created by .ignore support plugin (hsz.mobi)
 
-# Test files
-/test/
+# IDE' files
+.idea
 
-# Binaries
-/bin/
-*.exe
-
-# Config file
+# config file
 config.yml
+
+# results of code execution
+output
+out
+
+# any binaries
+*.exe
