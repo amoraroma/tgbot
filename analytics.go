@@ -1,134 +1,79 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
-	"io"
-	"io/ioutil"
+	segmentio "gopkg.in/segmentio/analytics-go.v3"
 	"log"
-	"net/http"
-	"strings"
+	"strconv"
 )
 
-const StatServer = "https://bigbonus.pp.ua/api/"
-const ErrorServer = "https://bigbonus.pp.ua/api/err.php"
-
-type StatMessage struct {
-	From StatUser
-	Date int
-	Chat StatChat
-	Text string
+func NewAnalytics(token string) Analytics {
+	client := segmentio.New(token)
+	return Analytics{client}
 }
 
-type StatUser struct {
-	ID        int
-	FirstName string
-	LastName  string
-	Username  string
-	Language  string
+type Analytics struct {
+	client segmentio.Client
 }
 
-type StatChat struct {
-	ID        int64
-	Type      string
-	Title     string
-	Username  string
-	FirstName string
-	LastName  string
-}
-
-type ServerResponse struct {
-	Error   bool   `json:"error"`
-	Message string `json:"message"`
-}
-
-func analytics(msg *tgbotapi.Message) {
-	var sMsg = makeStatMessage(msg)
-
-	jsonStat, err := json.Marshal(sMsg)
-	if err != nil {
+func (a Analytics) Identify(msg *tgbotapi.Message) {
+	var firstName, lastName, username string
+	firstName = msg.Chat.FirstName
+	lastName = msg.Chat.LastName
+	username = msg.Chat.UserName
+	if msg.From != nil {
+		firstName = msg.From.FirstName
+		lastName = msg.From.LastName
+		username = msg.From.UserName
+	}
+	userID := a.getUserID(msg)
+	//noinspection GoUnhandledErrorResult
+	if err := a.client.Enqueue(segmentio.Identify{
+		UserId: strconv.Itoa(userID),
+		Traits: segmentio.NewTraits().
+			SetFirstName(firstName).
+			SetLastName(lastName).
+			SetUsername(username),
+	}); err != nil {
 		log.Println(err)
 	}
-	jsonReader := bytes.NewReader(jsonStat)
-
-	if err = sendMsgToServer("Stat", jsonReader); err != nil {
-		log.Panic(err)
-	}
-
 	return
 }
 
-func makeStatMessage(msg *tgbotapi.Message) (sMsg StatMessage) {
-	var sChat = StatChat{}
-	var sUser = StatUser{}
-	if msg.Chat != nil {
-		sChat = StatChat{
-			msg.Chat.ID,
-			msg.Chat.Type,
-			msg.Chat.Title,
-			msg.Chat.UserName,
-			msg.Chat.FirstName,
-			msg.Chat.LastName,
-		}
-	}
-	if msg.From != nil {
-		sUser = StatUser{
-			msg.From.ID,
-			msg.From.FirstName,
-			msg.From.LastName,
-			msg.From.UserName,
-			msg.From.LanguageCode,
-		}
-	}
-
-	sMsg = StatMessage{sUser, msg.Date, sChat, msg.Text}
-	return sMsg
-}
-
-func sendMsgToServer(mode string, r io.Reader) (err error) {
-	var server string
-	if mode == "Error" {
-		server = ErrorServer
-	} else {
-		server = StatServer
-	}
-	var userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0"
-	var serverResponse ServerResponse
-
-	req, err := http.NewRequest("POST", server, r)
-	if err != nil {
-		return
-	}
-	req.Header.Set("User-Agent", userAgent)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return
-	}
-
-	defer resp.Body.Close()
-
-	if err = json.Unmarshal(body, &serverResponse); err != nil {
-		return
-	}
-	if serverResponse.Error {
-		err = fmt.Errorf("%s", serverResponse.Message)
-		return
-	}
-	return nil
-}
-
-func reportError(e error) {
-	reader := strings.NewReader(e.Error())
-	if err := sendMsgToServer("Error", reader); err != nil {
+func (a Analytics) NewMessage(msg *tgbotapi.Message) {
+	userID := a.getUserID(msg)
+	//noinspection GoUnhandledErrorResult
+	if err := a.client.Enqueue(segmentio.Track{
+		UserId: strconv.Itoa(userID),
+		Event:  "New message",
+		Properties: segmentio.NewProperties().
+			Set("text", msg.Text).
+			Set("from", msg.Chat.Type),
+	}); err != nil {
 		log.Println(err)
 	}
+	return
+}
+
+func (a Analytics) NewError(msg *tgbotapi.Message, err error) {
+	userID := a.getUserID(msg)
+	//noinspection GoUnhandledErrorResult
+	if err := a.client.Enqueue(segmentio.Track{
+		UserId: strconv.Itoa(userID),
+		Event:  "New error",
+		Properties: segmentio.NewProperties().
+			Set("error", err.Error()).
+			Set("message", msg.Text),
+	}); err != nil {
+		log.Println(err)
+	}
+	return
+}
+
+func (a Analytics) getUserID(msg *tgbotapi.Message) int {
+	userID := int(msg.Chat.ID)
+	if msg.From != nil {
+		userID = msg.From.ID
+	}
+	return userID
 }
