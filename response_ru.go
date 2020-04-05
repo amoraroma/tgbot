@@ -1,0 +1,75 @@
+package main
+
+type PhraseRU struct{}
+
+// Commands
+func (PhraseRU) CmdStart() string {
+	// "Hello, #{username}.\n" +
+	//	"I'm SoundCloud downloader bot.\n" +
+	//	"Send me an url and i will respond with attached audio file"
+	return "Приветствую, юзер!👋\n" +
+		"Я - робот 🤖, запрограммированный скачивать музыку из SoundCloud.\n" +
+		"Отправьте мне ссылку и я отвечу прикрепленным аудио-файлом"
+}
+func (PhraseRU) CmdHelp() string {
+	// "Send me an url and i will download it for you.\n" +
+	//	"If something went wrong - first make sure url is valid and song available." +
+	//	"Then try send message again." +
+	//	"If error still persist - contact with developer (link in description)\n" +
+	//	"\n===========================================\n" +
+	//	"Currently supported services: \n" +
+	//	"= soundcloud.com [only direct song urls yet]"
+	return "Отправьте мне ссылку на песню, и я скачаю её для вас.\n" +
+		"\nЕсли в процессе возникают ошибки - сперва убедитесь что ссылка рабочая, а сама песня доступная. " +
+		"После этого, попробуйте отправить сообщение еще раз. " +
+		"Если ошибка осталась - свяжитесь с разработчиком (ссылка в описании)\n" +
+		"\n====================================\n" +
+		"Список поддерживаемых сервисов:" +
+		"\n====================================\n" +
+		"🎵[soundcloud.com] - пока только прямые ссылки на песни\n"
+}
+func (PhraseRU) CmdUnknown() string {
+	// "I don't know that command." +
+	// "Use /help for additional info"
+	return "Хмм, я не знаю такой команды." +
+		"Посмотри в /help для дополнительной информации"
+}
+
+// Process explaining
+func (PhraseRU) ProcessStart() string {
+	// "Please wait..."
+	return "Подожди. Я работаю 🌪"
+}
+func (PhraseRU) ProcessUploading() string {
+	// "Everything done. Uploading song to you..."
+	return "Все готово 🦾. Загружаю песню..."
+}
+
+// Exceptions
+func (PhraseRU) ErrNotURL() string {
+	// "Please make sure this URL is valid and try again"
+	return "Эй, а это точно ссылка? 👀"
+}
+func (PhraseRU) ErrUndefined() string {
+	// "There is some problems with this song. Please try again or contact with developer\n" +
+	//	"Use /help for additional info"
+	return "Хмм, с этой песней какие-то проблемы 🤔. Попробуй снова либо попробуй связаться с моим создателем"
+}
+func (PhraseRU) ErrPlaylist() string {
+	// "Sorry, but i don't work with playlists yet. Use /help for more info"
+	return "Это плейлист? Если да, тогда чтобы ты знал - я с ними не дружу 😒"
+}
+func (PhraseRU) ErrUnsupportedFormat() string {
+	// "This format unsupported yet. Use /help for more info"
+	return "Что это за формат такой? Не похоже на песню. Иначе я бы знал что с этим делать 😧"
+}
+func (PhraseRU) ErrUnsupportedService() string {
+	// "This service unsupported yet. Use /help for more info"
+	return "Эй, я пока еще знаком с этим сервисом 💢. Лучше посмотри в /help сначала"
+}
+func (PhraseRU) ErrUnavailableSong() string {
+	// "Can't load this song. Make sure it is available and try again.\n" +
+	//	"Otherwise, use /help for additional info"
+	return "Иии... ничего. Эта песня точно доступна? Потому что я не могу её найти 😕.\n" +
+		"Если же это я ошибся - свяжись с моим создателем, может он сможет помочь.. 👀"
+}

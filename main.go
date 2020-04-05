@@ -7,6 +7,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 )
 
+var BotPhrase = Responses.Get("en")
+
 func main() {
 	config := loadConfig("config.yml")
 	analytics := NewAnalytics(config.Segmentio.Token)
@@ -50,35 +52,35 @@ func handleError(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, err error, analyti
 	var responseMsg string
 	switch err.(type) {
 	case erzo.ErrNotURL:
-		responseMsg = BotPhrase.ErrNotURL
+		responseMsg = BotPhrase.ErrNotURL()
 		err = nil // its not really an error, dont need to report
 		log.Println("Received message without link. Responding...")
 	case erzo.ErrUnsupportedService:
-		responseMsg = BotPhrase.ErrUnsupportedService
+		responseMsg = BotPhrase.ErrUnsupportedService()
 		err = nil // its not really an error, dont need to report
 		log.Println("Received message with link from unsupported service. Responding...")
 	case erzo.ErrUnsupportedProtocol:
 		// almost similar for user but we need to report about it
-		responseMsg = BotPhrase.ErrUnsupportedService
+		responseMsg = BotPhrase.ErrUnsupportedService()
 	case erzo.ErrUnsupportedType:
 		if err.(erzo.ErrUnsupportedType).Format == "playlist" {
-			responseMsg = BotPhrase.ErrPlaylist
+			responseMsg = BotPhrase.ErrPlaylist()
 		} else {
-			responseMsg = BotPhrase.ErrUnsupportedFormat
+			responseMsg = BotPhrase.ErrUnsupportedFormat()
 		}
 		err = nil // its not really an error, dont need to report
 		log.Println("Received message with unsupported url type. Responding...")
 	case erzo.ErrCantFetchInfo:
 		// most of the time, can't fetch if song is unavailable, and that's what we respond to user
 		// we don't really need to report this error to analytic, but lets keep it for more verbose
-		responseMsg = BotPhrase.ErrUnavailableSong
+		responseMsg = BotPhrase.ErrUnavailableSong()
 	case erzo.ErrDownloadingError:
 		// it means we fetched all info, but could not download it. Tell user to try again
-		responseMsg = BotPhrase.ErrUndefined
+		responseMsg = BotPhrase.ErrUndefined()
 	case erzo.ErrUndefined:
-		responseMsg = BotPhrase.ErrUndefined
+		responseMsg = BotPhrase.ErrUndefined()
 	default:
-		responseMsg = BotPhrase.ErrUndefined
+		responseMsg = BotPhrase.ErrUndefined()
 	}
 	if err != nil && err.Error() == "Request Entity Too Large" {
 		responseMsg = "Looks like this song weighs too much.\n" +
@@ -99,6 +101,10 @@ func handleError(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, err error, analyti
 }
 
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
+	// Update responses language first
+	log.Printf("%+v", message.From.LanguageCode)
+	BotPhrase = Responses.Get(message.From.LanguageCode)
+
 	var isPrivateChat = message.Chat.Type == "private"
 	var tmpMessageID int
 	var chatID = message.Chat.ID
@@ -112,7 +118,7 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
 	}
 
 	if isPrivateChat {
-		tmpMessageID = sendMessage(bot, chatID, BotPhrase.ProcessStart)
+		tmpMessageID = sendMessage(bot, chatID, BotPhrase.ProcessStart())
 	}
 	defer deleteTempMessage(bot, message.Chat, tmpMessageID)
 
@@ -130,7 +136,7 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
 
 	if isPrivateChat {
 		// update old temp message
-		tmpMessageID = sendMessage(bot, chatID, BotPhrase.ProcessUploading, tmpMessageID)
+		tmpMessageID = sendMessage(bot, chatID, BotPhrase.ProcessUploading(), tmpMessageID)
 	}
 
 	// Inform user about uploading
@@ -153,11 +159,11 @@ func checkForCommands(message *tgbotapi.Message) (response string) {
 
 	switch message.Command() {
 	case "help":
-		return BotPhrase.CmdHelp
+		return BotPhrase.CmdHelp()
 	case "start":
-		return BotPhrase.CmdStart
+		return BotPhrase.CmdStart()
 	default:
-		return BotPhrase.CmdUnknown
+		return BotPhrase.CmdUnknown()
 	}
 }
 
