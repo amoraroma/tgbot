@@ -102,8 +102,11 @@ func handleError(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, err error, analyti
 
 func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
 	// Update responses language first
-	log.Printf("%+v", message.From.LanguageCode)
-	BotPhrase = Responses.Get(message.From.LanguageCode)
+	language := "en"
+	if message.From != nil {
+		language = message.From.LanguageCode
+	}
+	BotPhrase = Responses.Get(language)
 
 	var isPrivateChat = message.Chat.Type == "private"
 	var tmpMessageID int
@@ -124,12 +127,6 @@ func handleMessage(bot *tgbotapi.BotAPI, message *tgbotapi.Message) error {
 
 	songFile, err := erzo.Get(message.Text, erzo.Truncate(true))
 	if err != nil {
-		if !isPrivateChat {
-			msgToDelete := tgbotapi.NewDeleteMessage(chatID, tmpMessageID)
-			if _, err := bot.DeleteMessage(msgToDelete); err != nil {
-				log.Printf("error while deleting temp message: %s", err)
-			}
-		}
 		return err
 	}
 	log.Println("Downloaded song. Uploading to user...")
