@@ -9,7 +9,7 @@ func (PhraseRU) CmdStart() string {
 	//	"Send me an url and i will respond with attached audio file"
 	return "Приветствую, юзер!👋\n" +
 		"Я - робот 🤖, запрограммированный скачивать музыку из SoundCloud.\n" +
-		"Отправьте мне ссылку и я отвечу прикрепленным аудио-файлом"
+		"Отправь мне ссылку и я отвечу прикрепленным аудио-файлом"
 }
 func (PhraseRU) CmdHelp() string {
 	// "Send me an url and i will download it for you.\n" +
@@ -31,7 +31,7 @@ func (PhraseRU) CmdHelp() string {
 func (PhraseRU) CmdUnknown() string {
 	// "I don't know that command." +
 	// "Use /help for additional info"
-	return "Хмм, я не знаю такой команды." +
+	return "Хмм, я не знаю такой команды.\n" +
 		"Посмотри в /help для дополнительной информации"
 }
 
@@ -53,11 +53,11 @@ func (PhraseRU) ErrNotURL() string {
 func (PhraseRU) ErrUndefined() string {
 	// "There is some problems with this song. Please try again or contact with developer\n" +
 	//	"Use /help for additional info"
-	return "Хмм, с этой песней какие-то проблемы 🤔. Попробуй снова либо попробуй связаться с моим создателем"
+	return "Хмм, с этой песней какие-то проблемы 🤔. Попробуй снова либо же свяжись с моим создателем"
 }
 func (PhraseRU) ErrPlaylist() string {
 	// "Sorry, but i don't work with playlists yet. Use /help for more info"
-	return "Это плейлист? Если да, тогда чтобы ты знал - я с ними не дружу 😒"
+	return "Это плейлист? Не люблю их... 😒"
 }
 func (PhraseRU) ErrUnsupportedFormat() string {
 	// "This format unsupported yet. Use /help for more info"
@@ -65,11 +65,11 @@ func (PhraseRU) ErrUnsupportedFormat() string {
 }
 func (PhraseRU) ErrUnsupportedService() string {
 	// "This service unsupported yet. Use /help for more info"
-	return "Эй, я пока еще знаком с этим сервисом 💢. Лучше посмотри в /help сначала"
+	return "Эй, я пока еще не знаком с этим сервисом 💢. Лучше посмотри в /help сначала"
 }
 func (PhraseRU) ErrUnavailableSong() string {
 	// "Can't load this song. Make sure it is available and try again.\n" +
 	//	"Otherwise, use /help for additional info"
-	return "Иии... ничего. Эта песня точно доступна? Потому что я не могу её найти 😕.\n" +
-		"Если же это я ошибся - свяжись с моим создателем, может он сможет помочь.. 👀"
+	return "Ии... ничего. Эта песня точно доступна? Потому что я не могу её найти 😕.\n" +
+		"Если ты уверен и это я ошибся - свяжись с моим создателем, может он сможет помочь.. 👀"
 }
