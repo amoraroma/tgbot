@@ -11,12 +11,7 @@ var BotPhrase = Responses.Get("en")
 
 func main() {
 	config := loadConfig("config.yml")
-	analytics := NewAnalytics(config.Segmentio.Token)
-	defer func() {
-		if err := analytics.client.Close(); err != nil {
-			log.Printf("error while closing analytic client: %s", err)
-		}
-	}()
+
 	bot, err := tgbotapi.NewBotAPI(config.Telegram.Token)
 	if err != nil {
 		log.Fatal(err)
@@ -40,57 +35,62 @@ func main() {
 		} else {
 			continue
 		}
-		analytics.Identify(msg)
-		analytics.NewMessage(msg)
+		dbMsgID := reportMessage(msg)
 		if err := handleMessage(bot, msg); err != nil {
-			handleError(bot, msg, err, analytics)
+			handleError(bot, msg, err, dbMsgID)
 		}
 	}
 }
 
-func handleError(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, err error, analytics Analytics) {
+func handleError(bot *tgbotapi.BotAPI, msg *tgbotapi.Message, err error, dbMsgID int) {
 	var responseMsg string
+	var errCode int
 	switch err.(type) {
 	case erzo.ErrNotURL:
 		responseMsg = BotPhrase.ErrNotURL()
-		err = nil // its not really an error, dont need to report
+		err = nil // its not error
 		log.Println("Received message without link. Responding...")
 	case erzo.ErrUnsupportedService:
 		responseMsg = BotPhrase.ErrUnsupportedService()
-		err = nil // its not really an error, dont need to report
+		errCode = 10
 		log.Println("Received message with link from unsupported service. Responding...")
 	case erzo.ErrUnsupportedProtocol:
 		// almost similar for user but we need to report about it
 		responseMsg = BotPhrase.ErrUnsupportedService()
+		errCode = 31
 	case erzo.ErrUnsupportedType:
 		if err.(erzo.ErrUnsupportedType).Format == "playlist" {
 			responseMsg = BotPhrase.ErrPlaylist()
 		} else {
 			responseMsg = BotPhrase.ErrUnsupportedFormat()
 		}
-		err = nil // its not really an error, dont need to report
+		errCode = 11
 		log.Println("Received message with unsupported url type. Responding...")
 	case erzo.ErrCantFetchInfo:
 		// most of the time, can't fetch if song is unavailable, and that's what we respond to user
 		// we don't really need to report this error to analytic, but lets keep it for more verbose
 		responseMsg = BotPhrase.ErrUnavailableSong()
+		errCode = 20
 	case erzo.ErrDownloadingError:
 		// it means we fetched all info, but could not download it. Tell user to try again
 		responseMsg = BotPhrase.ErrUndefined()
+		errCode = 30
 	case erzo.ErrUndefined:
 		responseMsg = BotPhrase.ErrUndefined()
+		errCode = 99
 	default:
 		responseMsg = BotPhrase.ErrUndefined()
+		errCode = 99
 	}
 	if err != nil && err.Error() == "Request Entity Too Large" {
 		responseMsg = "Looks like this song weighs too much.\n" +
 			"Telegram limits uploading files size to 50mb and we can't avoid this limit.\n" +
 			"Please try another one"
-		err = nil // its not error, dont report
+		errCode = 19
 	}
 
 	if err != nil {
-		analytics.NewError(msg, err)
+		reportError(dbMsgID, err, errCode)
 	}
 
 	if msg.Chat.Type != "private" {
