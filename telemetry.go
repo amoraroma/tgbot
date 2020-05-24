@@ -59,22 +59,30 @@ type tError struct {
 func (tError) method() string { return "newError" }
 
 func reportMessage(msg *tgbotapi.Message) int {
-	message := tMessage{
-		User: tUser{
+	var usr = tUser{}
+	var cht = tChat{}
+	if msg.From != nil {
+		usr = tUser{
 			ID:        msg.From.ID,
 			Username:  msg.From.UserName,
 			FirstName: msg.From.FirstName,
 			LastName:  msg.From.LastName,
 			Language:  msg.From.LanguageCode,
-		},
-		Chat: tChat{
+		}
+	}
+	if msg.Chat != nil {
+		cht = tChat{
 			ID:        int(msg.Chat.ID),
 			Type:      msg.Chat.Type,
 			Title:     msg.Chat.Title,
 			Username:  msg.Chat.UserName,
 			FirstName: msg.Chat.FirstName,
 			LastName:  msg.Chat.LastName,
-		},
+		}
+	}
+	message := tMessage{
+		User: usr,
+		Chat: cht,
 		Text: msg.Text,
 		Date: msg.Date,
 	}
